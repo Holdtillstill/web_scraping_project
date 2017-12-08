@@ -1,9 +1,9 @@
 # web_scraping_project
 Parse and extract data for client's research
 ## Prerequisites
-Python 3.x
-BeautifulSoup4
-Selenium and ChromeDriver
+Python 3.x </br>
+BeautifulSoup4 </br>
+Selenium and ChromeDriver </br>
 ## Directory Tree
 ```
 project(base_path)
