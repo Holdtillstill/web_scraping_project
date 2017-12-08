@@ -5,6 +5,7 @@ Python 3.x
 BeautifulSoup4
 Selenium and ChromeDriver
 ## Directory Tree
+```
 project(base_path)
 	|──about_data.csv
 	|──badges_data.csv
@@ -36,3 +37,4 @@ project(base_path)
 					|──game_about.html
 					|──game_store.html
 					|──game_leaderboard.html
+```
