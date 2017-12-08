@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup
 from selenium.common.exceptions import ElementNotVisibleException
 
 
-about_csv_file_file_path = "/home/bozhi/Documents/seleniumRoblox/popularGames/redownload/"
+about_csv_file_file_path = "/home/bozhi/Documents/seleniumRoblox/popularGames/"
 about_csv_file_file_name = "about_data.csv"
 creator_html_file_path = "/home/bozhi/Documents/seleniumRoblox/popularGames/redownload/creators"
 
@@ -35,7 +35,6 @@ def main():
 			individual_url.append(url)
 
 	os.chdir(creator_html_file_path)
-	'''
 	for url in group_url:
 		creator_id = url.rsplit("gid=", 1)[1]
 		driver.get(url)
@@ -53,7 +52,6 @@ def main():
 				print(url)
 				with open("group_"+creator_id+"_clan.html","w") as f:
 					f.write(clan_html)
-	'''
 
 	for url in individual_url:
 		creator_id = url.rsplit("/", 1)[0].rsplit("/", 1)[1]
@@ -101,6 +99,51 @@ def main():
 			creation_html = driver.page_source
 			with open("individual_"+creator_id+"_creations.html","w") as f:
 				f.write(creation_html)
+
+		
+		player_badges_url = url.rsplit("/",1)[0]+"/inventory/#!/badges"
+		driver.get(player_badges_url)
+		if page_error(url) is False:
+			time.sleep(1)
+			next_page_button = driver.find_element_by_xpath("//a[@ng-click='cursorPaging.loadNextPage()']")
+			while len(driver.find_elements_by_xpath("//li[@class='pager-next']")) > 0:
+				time.sleep(1)
+				current_page_string = driver.find_element_by_xpath("//ul[@class='pager']//span[@class='ng-binding']").text
+				current_page = current_page_string.split(" ",1)[1]
+				player_badges_html = driver.page_source
+				with open("individual_"+creator_id+"_player_badges_page_"+current_page+".html","w") as f:
+					f.write(player_badges_html)
+				next_page_button.click()
+				time.sleep(1)
+			current_page_string = driver.find_element_by_xpath("//ul[@class='pager']//span[@class='ng-binding']").text
+			current_page = current_page_string.split(" ",1)[1]
+			player_badges_html = driver.page_source
+			with open("individual_"+creator_id+"_player_badges_page_"+current_page+".html","w") as f:
+				f.write(player_badges_html)
+			next_page_button.click()
+			time.sleep(1)
+
+		favorite_games_url = url.rsplit("/",1)[0]+"/favorites#!/places"
+		driver.get(favorite_games_url)
+		if page_error(url) is False:
+			time.sleep(1)
+			next_page_button = driver.find_element_by_xpath("//a[@ng-click='cursorPaging.loadNextPage()']")
+			while len(driver.find_elements_by_xpath("//li[@class='pager-next']")) > 0:
+				time.sleep(1)
+				current_page_string = driver.find_element_by_xpath("//ul[@class='pager']//span[@class='ng-binding']").text
+				current_page = current_page_string.split(" ",1)[1]
+				favorite_games_html = driver.page_source
+				with open("individual_"+creator_id+"_player_favorite_games_page_"+current_page+".html","w") as f:
+					f.write(favorite_games_html)
+				next_page_button.click()
+				time.sleep(1)
+			current_page_string = driver.find_element_by_xpath("//ul[@class='pager']//span[@class='ng-binding']").text
+			current_page = current_page_string.split(" ",1)[1]
+			favorite_games_html = driver.page_source
+			with open("individual_"+creator_id+"_player_favorite_games_page_"+current_page+".html","w") as f:
+				f.write(favorite_games_html)
+			next_page_button.click()
+			time.sleep(1)
 
 
 def page_error(url):

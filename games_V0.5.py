@@ -5,9 +5,12 @@ import os
 import glob
 import multiprocessing
 
-base_path = "/home/bozhi/Documents/seleniumRoblox"
-file_path = base_path + "/popularGames/redownload/creators/secondtier"
-#make sure to end with "/"
+#csv output directory
+base_path = "/home/bozhi/Documents/seleniumRoblox/popularGames/"
+#downloaded html directory
+file_path = base_path + "redownload/"
+#/creators/secondtier/
+
 
 about_file_name = "about_data"
 recommendedGames_file_name = "recommendedGames_data"
@@ -18,14 +21,13 @@ clanLeaderboards_file_name = "clanLeaderboards_data"
 
 def main():
 
-	WriteGameAboutCsvHeader(file_path,about_file_name)
-	WriteRecommendedGamesCsvHeader(file_path,recommendedGames_file_name)
-	WriteGameBadgesCsvHeader(file_path,gameBadges_file_name)
-	WriteGameStoreCsvHeader(file_path,store_file_name)
-	WritePlayerLeaderboardsCsvHeader(file_path, playerLeaderboards_file_name)
-	WriteClanLeaderboardsCsvHeader(file_path, clanLeaderboards_file_name)
-	WriteErrorLogCsvHeader(file_path)
-
+	WriteGameAboutCsvHeader(base_path,about_file_name)
+	WriteRecommendedGamesCsvHeader(base_path,recommendedGames_file_name)
+	WriteGameBadgesCsvHeader(base_path,gameBadges_file_name)
+	WriteGameStoreCsvHeader(base_path,store_file_name)
+	WritePlayerLeaderboardsCsvHeader(base_path, playerLeaderboards_file_name)
+	WriteClanLeaderboardsCsvHeader(base_path, clanLeaderboards_file_name)
+	WriteErrorLogCsvHeader(base_path)
 
 	os.chdir(file_path)
 
@@ -35,20 +37,23 @@ def main():
 		gameID = GetGameID(file_type)
 		soup = ReadHTML(file_type)
 
-		gameName = GetGameName(soup)
+		game_heading = GetGameName(soup)
 
-		if gameName is None:
-			with open(file_path+"/"+"errorLog.csv","a") as f:
-				writer = csv.writer(f)
-				writer.writerow(file_path+file_name)
+		if game_heading is None:
+			write_errorlog(file_path+file_type)
 
 		else:
+			gameName = game_heading.text
 			if '_about' in file_type:
 				print(file_type)
-				aboutP = multiprocessing.Process(target=ProcessAbout, args=(soup, gameID, gameName, file_path+about_file_name,))
-				recommendedGamesP = multiprocessing.Process(target=ProcessRecommendedGames, args=(soup, gameID, gameName, file_path+recommendedGames_file_name,))
-				gameBadgesP = multiprocessing.Process(target=ProcessGameBadges, args=(soup, gameID, gameName, file_path+gameBadges_file_name,))
-				aboutP.start()
+				aboutP = multiprocessing.Process(target=ProcessAbout, args=(soup, gameID, gameName, base_path+about_file_name,file_path+file_type))
+				recommendedGamesP = multiprocessing.Process(target=ProcessRecommendedGames, args=(soup, gameID, gameName, base_path+recommendedGames_file_name))
+				gameBadgesP = multiprocessing.Process(target=ProcessGameBadges, args=(soup, gameID, gameName, base_path+gameBadges_file_name))
+				try:
+					aboutP.start()
+				except UnboundLocalError:
+					write_errorlog(file_path+file_type)
+					pass
 				recommendedGamesP.start()
 				gameBadgesP.start()
 
@@ -56,58 +61,77 @@ def main():
 
 			elif '_store' in file_type:
 				print(file_type)
-				storeP = multiprocessing.Process(target=ProcessStore, args=(soup, gameID, gameName, file_path+store_file_name,))
+				storeP = multiprocessing.Process(target=ProcessStore, args=(soup, gameID, gameName, base_path+store_file_name,))
 				storeP.start()
 
 			elif '_leaderboards' in file_type:
 				print(file_type)
-				playerLeaderboardsP = multiprocessing.Process(target=ProcessPlayersLeaderboards, args=(soup, gameID, gameName, file_path+playerLeaderboards_file_name,))
-				clanLeaderboardsP = multiprocessing.Process(target=ProcessClansLeaderboards, args=(soup, gameID, gameName, file_path+clanLeaderboards_file_name,))
+				playerLeaderboardsP = multiprocessing.Process(target=ProcessPlayersLeaderboards, args=(soup, gameID, gameName, base_path+playerLeaderboards_file_name,))
+				clanLeaderboardsP = multiprocessing.Process(target=ProcessClansLeaderboards, args=(soup, gameID, gameName, base_path+clanLeaderboards_file_name,))
 				playerLeaderboardsP.start()
 				clanLeaderboardsP.start()
 
+def WriteErrorLogCsvHeader(base_path):
+	file = base_path+"/"+"errorLog.csv"
+	if not os.path.exists(file):
+		header = ["File_Location"]
+		with open(file,"w+") as f:
+			dw = csv.DictWriter(f, fieldnames = header)
+			dw.writeheader()
 
-def WriteGameAboutCsvHeader(file_path, file_name):
-	header = ["Game_ID","Game_Name","Free_Paid","Price","Creator_ID","Creator_Name","Creator_Type","Creator_Url","Favorited_Times","Upvotes","Downvotes","Playing","Visits","Created_Date","Last_Update","Max_Player","Genre","Genre_Url","Gear","Description"]
-	with open(file_path+"/"+file_name+".csv","w+") as f:
-		dw = csv.DictWriter(f, fieldnames = header)
-		dw.writeheader()
+def write_errorlog(file_location):
+	with open(base_path+"/"+"errorLog.csv","a") as f:
+		writer = csv.writer(f)
+		writer.writerow([file_location])
 
-def WriteRecommendedGamesCsvHeader(file_path, file_name):
-	header = ["Game_ID","Game_Name","Recommended_Game_ID","Recommended_Game_Name","Recommended_Game_Url"]
-	with open(file_path+"/"+file_name+".csv","w+") as f:
-		dw = csv.DictWriter(f, fieldnames = header)
-		dw.writeheader()
 
-def WriteGameBadgesCsvHeader(file_path, file_name):
-	header = ["Game_ID","Game_Name","Badge_Name","Badge_Description","Badge_Rarity","Badge_Won_Yesterday","Ever"]
-	with open(file_path+"/"+file_name+".csv","w+") as f:
-		dw = csv.DictWriter(f, fieldnames = header)
-		dw.writeheader()
+def WriteGameAboutCsvHeader(base_path, file_name):
+	file = base_path+"/"+file_name+".csv"
+	if not os.path.exists(file):
+		header = ["Game_ID","Game_Name","Free_Paid","Price","Creator_ID","Creator_Name","Creator_Type","Creator_Url","Favorited_Times","Upvotes","Downvotes","Playing","Visits","Created_Date","Last_Update","Max_Player","Genre","Genre_Url","Gear","Description"]
+		with open(file,"w+") as f:
+			dw = csv.DictWriter(f, fieldnames = header)
+			dw.writeheader()
 
-def WriteGameStoreCsvHeader(file_path, file_name):
-	header = ["Game_ID","Game_Name","Pass_ID","Pass_Name","Pass_Url","Pass_Price"]
-	with open(file_path+"/"+file_name+".csv","w+") as f:
-		dw = csv.DictWriter(f, fieldnames = header)
-		dw.writeheader()
+def WriteRecommendedGamesCsvHeader(base_path, file_name):
+	file = base_path+"/"+file_name+".csv"
+	if not os.path.exists(file):
+		header = ["Game_ID","Game_Name","Recommended_Game_ID","Recommended_Game_Name","Recommended_Game_Url"]
+		with open(file,"w+") as f:
+			dw = csv.DictWriter(f, fieldnames = header)
+			dw.writeheader()
 
-def WritePlayerLeaderboardsCsvHeader(file_path, file_name):
-	header = ["Game_ID","Game_Name","Player_ID","Player_Name","Player_Url","Player_Group","Rank","Points"]
-	with open(file_path+"/"+file_name+".csv","w+") as f:
-		dw = csv.DictWriter(f, fieldnames = header)
-		dw.writeheader()
+def WriteGameBadgesCsvHeader(base_path, file_name):
+	file = base_path+"/"+file_name+".csv"
+	if not os.path.exists(file):
+		header = ["Game_ID","Game_Name","Badge_Name","Badge_Description","Badge_Rarity","Badge_Won_Yesterday","Ever"]
+		with open(file,"w+") as f:
+			dw = csv.DictWriter(f, fieldnames = header)
+			dw.writeheader()
 
-def WriteClanLeaderboardsCsvHeader(file_path, file_name):
-	header = ["Game_ID","Game_Name","Clan_ID","Clan_Name","Clan_Url","Clan_Owner","Rank","Points"]
-	with open(file_path+"/"+file_name+".csv","w+") as f:
-		dw = csv.DictWriter(f, fieldnames = header)
-		dw.writeheader()
+def WriteGameStoreCsvHeader(base_path, file_name):
+	file = base_path+"/"+file_name+".csv"
+	if not os.path.exists(file):
+		header = ["Game_ID","Game_Name","Pass_ID","Pass_Name","Pass_Url","Pass_Price"]
+		with open(file,"w+") as f:
+			dw = csv.DictWriter(f, fieldnames = header)
+			dw.writeheader()
 
-def WriteErrorLogCsvHeader(file_path):
-	header = ["File_Location"]
-	with open(file_path+"/"+"errorLog.csv","w+") as f:
-		dw = csv.DictWriter(f, fieldnames = header)
-		dw.writeheader()
+def WritePlayerLeaderboardsCsvHeader(base_path, file_name):
+	file = base_path+"/"+file_name+".csv"
+	if not os.path.exists(file):
+		header = ["Game_ID","Game_Name","Player_ID","Player_Name","Player_Url","Player_Group","Rank","Points"]
+		with open(file,"w+") as f:
+			dw = csv.DictWriter(f, fieldnames = header)
+			dw.writeheader()
+
+def WriteClanLeaderboardsCsvHeader(base_path, file_name):
+	file = base_path+"/"+file_name+".csv"
+	if not os.path.exists(file):
+		header = ["Game_ID","Game_Name","Clan_ID","Clan_Name","Clan_Url","Clan_Owner","Rank","Points"]
+		with open(file,"w+") as f:
+			dw = csv.DictWriter(f, fieldnames = header)
+			dw.writeheader()
 
 def ReadHTML(file_type):
 	try:
@@ -129,14 +153,18 @@ def GetGameID(file_type):
 	return gameID
 
 def GetGameName(soup):
-	gameName = soup.find("h2",{"class":"game-name"}).text
+	gameName = soup.find("h2",{"class":"game-name"})
 	return gameName
 
-def ProcessAbout(soup, gameID, gameName, csv_directory):
+def ProcessAbout(soup, gameID, gameName, csv_directory, file_location):
+
+	voting_spinner = soup.find("span",{"class":"voting-panel spinner spinner-default"})
+	if voting_spinner is not None:
+		write_errorlog(file_location)
+		return
+		
 	row = []
 	table = []
-
-	#accessRestriction = soup.find("div",{"id":"game-access-restrictions"})
 
 	payToPlay = soup.find("div",{"id":"PurchaseRequired"})
 
